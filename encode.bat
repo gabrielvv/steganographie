@@ -1,1 +1,1 @@
-.\a.exe -i ".\data\lena.bmp" -m "message tres tres secret" -k ".\data\key.txt"
+.\a.exe -i ".\data\rousse.dib" -m "message tres tres secret" -k ".\data\key.txt"

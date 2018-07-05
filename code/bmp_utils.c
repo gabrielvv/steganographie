@@ -25,6 +25,7 @@ unsigned char* manipBitmapFile(char *filename, BITMAPINFOHEADER *bitmapInfoHeade
     //open filename in read binary mode
     filePtr = fopen(filename,"r+b");
     if (filePtr == NULL){
+      printf("ne peut pas ouvrir le fichier\n");
       return NULL;
     }
 
@@ -34,6 +35,7 @@ unsigned char* manipBitmapFile(char *filename, BITMAPINFOHEADER *bitmapInfoHeade
     //verify that this is a bmp file by check bitmap id
     if (bitmapFileHeader.bfType !=0x4D42)
     {
+        printf("n'est pas un fichier bmp\n");
         fclose(filePtr);
         return NULL;
     }

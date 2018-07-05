@@ -116,29 +116,4 @@ void handle_file(
   memcpy(xor_vector, key, CHUNK_LENGTH);
   int input[CHUNK_LENGTH];
   int output[CHUNK_LENGTH];
-
-
-
-  // while(1)
-  // {
-  //   /**
-  //   * Reset input buffer
-  //   *
-  //   */
-  //   int j = 0;
-  //   for(j; j < CHUNK_LENGTH; j++) {
-  //     input[j] = 0;
-  //   }
-  //
-  //   int read;
-  //   if( !(read = fread(input, /*byte*/1, KEY_SIZE_BYTES, source)) ){
-  //     break;
-  //   }
-  //
-  //   // if(read < KEY_SIZE_BYTES) {
-  //   //   padding(input, read, KEY_SIZE_BYTES);
-  //   // }
-  //   (*encode_decode)(input, xor_vector, key, output);
-  //   fwrite(output, /*byte*/1, KEY_SIZE_BYTES, target);
-  // }
 }
