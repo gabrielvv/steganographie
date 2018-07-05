@@ -6,6 +6,8 @@
 #define LONG int
 #define BYTE char
 
+#include <stdio.h>
+
 #pragma pack(push, 1)
 
 typedef struct tagRGBQUAD {
@@ -14,6 +16,16 @@ typedef struct tagRGBQUAD {
   BYTE rgbRed;
   BYTE rgbReserved;
 } RGBQUAD;
+
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+
+typedef struct tagRGBTRI {
+  BYTE rgbBlue;
+  BYTE rgbGreen;
+  BYTE rgbRed;
+} RGBTRI;
 
 #pragma pack(pop)
 
@@ -49,6 +61,8 @@ typedef struct tagBITMAPINFOHEADER
 
 #pragma pack(pop)
 
-unsigned char* manipBitmapFile(char *filename, BITMAPINFOHEADER *bitmapInfoHeader, char* message, int decode_flag);
+unsigned char* process24(FILE*, BITMAPFILEHEADER*, char*, int, int);
+unsigned char* process8(FILE*, BITMAPFILEHEADER*, char*, int, int);
+unsigned char* manipBitmapFile(char*, BITMAPINFOHEADER*, char*, int);
 
 # endif
