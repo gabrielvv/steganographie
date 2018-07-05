@@ -4,6 +4,18 @@
 #define WORD unsigned short
 #define DWORD unsigned int
 #define LONG int
+#define BYTE char
+
+#pragma pack(push, 1)
+
+typedef struct tagRGBQUAD {
+  BYTE rgbBlue;
+  BYTE rgbGreen;
+  BYTE rgbRed;
+  BYTE rgbReserved;
+} RGBQUAD;
+
+#pragma pack(pop)
 
 #pragma pack(push, 1)
 
@@ -37,6 +49,6 @@ typedef struct tagBITMAPINFOHEADER
 
 #pragma pack(pop)
 
-unsigned char *manipBitmapFile(char *filename, BITMAPINFOHEADER *bitmapInfoHeader, char* message);
+unsigned char* manipBitmapFile(char *filename, BITMAPINFOHEADER *bitmapInfoHeader, char* message, int decode_flag);
 
 # endif

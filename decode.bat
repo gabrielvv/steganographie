@@ -1,1 +1,1 @@
-.\a.exe -i ".\files\lena.bmp" -m "message tres tres secret" -k ".\files\key.txt"
+.\a.exe -i ".\data\lena.bmp" -k ".\data\key.txt" --decode

@@ -10,7 +10,7 @@ extern int KEY_SIZE_BYTES;
 
 static int decode_flag;
 
-void handle_file(char*, char*, int*, void (*functionPtr)(int*, int*, int*, int*));
+void handle_file(char*, char*, int*);
 
 // https://stackoverflow.com/questions/840501/how-do-function-pointers-in-c-work
 void (*encode_decode)(int*, int*, int*, int*);
@@ -19,7 +19,7 @@ int main(int argc,char* argv[]) {
 
   int c;
   char *file_name = NULL;
-  char *message = NULL;
+  unsigned char *message = NULL;
   char *key_file_name = NULL;
   int* key;
 
@@ -85,7 +85,13 @@ int main(int argc,char* argv[]) {
   if(file_name && key_file_name)
   {
     key = set_key(key_file_name);
-    handle_file(file_name, message, key, message ? &img_enc : &img_dec);
+    BITMAPINFOHEADER bitmapInfoHeader;
+
+    message = manipBitmapFile(file_name, &bitmapInfoHeader, message, decode_flag);
+
+    if(!decode_flag) printf("message insere=%s\n", message);
+    if(decode_flag) printf("message recupere=%s\n", message);
+
   }
 
   free(file_name);
@@ -104,18 +110,14 @@ int main(int argc,char* argv[]) {
 void handle_file(
   char *file_name,
   char *message,
-  int* key,
-  void (*encode_decode)(int*, int*, int*, int*)) {
+  int* key) {
 
   int xor_vector[CHUNK_LENGTH];
   memcpy(xor_vector, key, CHUNK_LENGTH);
   int input[CHUNK_LENGTH];
   int output[CHUNK_LENGTH];
 
-  BITMAPINFOHEADER bitmapInfoHeader;
-  manipBitmapFile(file_name, &bitmapInfoHeader, message);
 
-  printf("img bits=%d", bitmapInfoHeader.biBitCount);
 
   // while(1)
   // {
