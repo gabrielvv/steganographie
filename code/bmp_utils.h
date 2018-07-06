@@ -8,6 +8,11 @@
 
 #include <stdio.h>
 
+typedef struct tagMSG {
+  char* message;
+  int len;
+} MSG;
+
 #pragma pack(push, 1)
 
 typedef struct tagRGBQUAD {
@@ -61,8 +66,8 @@ typedef struct tagBITMAPINFOHEADER
 
 #pragma pack(pop)
 
-unsigned char* process24(FILE*, BITMAPFILEHEADER*, char*, int, int);
-unsigned char* process8(FILE*, BITMAPFILEHEADER*, char*, int, int);
-unsigned char* manipBitmapFile(char*, BITMAPINFOHEADER*, char*, int);
+MSG* process24(FILE*, BITMAPFILEHEADER*, MSG*, int, int);
+MSG* process8(FILE*, BITMAPFILEHEADER*, MSG*, int, int);
+MSG* manipBitmapFile(char*, BITMAPINFOHEADER*, MSG*, int);
 
 # endif

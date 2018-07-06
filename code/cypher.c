@@ -1,19 +1,18 @@
 #include "cypher.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 const int KEY_SIZE_BYTES = 8; // la clé doit faire 64 bits
-const int CHUNK_LENGTH = 8 / sizeof(int);
+const int CHUNK_LENGTH = 8 / sizeof(char);
 
 /**
 * @param {char*} key_file_name - fichier stockant la clé
 *
 */
-int* set_key(char *key_file_name){
+char* set_key(char *key_file_name){
   FILE *key_file;
-  int* key = malloc(KEY_SIZE_BYTES);
-
-  printf("key_file_name=%s\n", key_file_name);
+  char* key = malloc(KEY_SIZE_BYTES);
 
   key_file = fopen(key_file_name, "rb");
   int read;
@@ -35,11 +34,11 @@ int* set_key(char *key_file_name){
 * @param {char*} input - chaine sur laquelle appliquer le xor
 * @param {char*} vector    - vecteur pour le xor
 */
-void array_xor(int* input, int* vector, int* output){
+void array_xor(char* input, char* vector, char* output){
 
   int i;
   for(i=0; i < CHUNK_LENGTH; ++i) {
-    output[i] = (int)(input[i] ^ vector[i]);
+    output[i] = (char)(input[i] ^ vector[i]);
   }
 }
 
@@ -52,8 +51,15 @@ void array_xor(int* input, int* vector, int* output){
 * @param {char*} key        - clé de chiffrement
 *
 */
-void img_enc(int* input, int* xor_vector, int* key, int* output){
+void msg_enc(char* input, char* xor_vector, char* key, char* output){
+  array_xor(input, xor_vector, output);
 
+  int i;
+  for(i=0; i < CHUNK_LENGTH; ++i) {
+    output[i] = output[i] ^ key[i];
+  }
+
+  memcpy(xor_vector, output, CHUNK_LENGTH);
 }
 
 /**
@@ -65,23 +71,30 @@ void img_enc(int* input, int* xor_vector, int* key, int* output){
 * @param {char*} key    - clé de chiffrement/déchiffrement
 *
 */
-void img_dec(int* input, int* xor_vector, int* key, int* output){
+void msg_dec(char* input, char* xor_vector, char* key, char* output){
+  memset(output, 0, CHUNK_LENGTH);
 
+  int i;
+  for(i=0; i < CHUNK_LENGTH; ++i) {
+    output[i] = input[i] ^ key[i];
+  }
+
+  array_xor(output, xor_vector, output);
+  memcpy( xor_vector, input, CHUNK_LENGTH );
 }
 
-void padding(int* input, int start_byte, int len_byte){
+void padding(char* input, int start_byte, int len_byte){
   (*input) = (*input) << (8*(len_byte-start_byte));
 }
 
 /**
-* /!\ Effet de bord
 *
 * @param {int*} input - à permuter
 * @param {int*} output - input permutée
 * @param {int} inverse - s'il faut appliquer la permutation inverse
 */
-void permutation(int* input, int* output, int inverse){
-
+void permutation(char* input, char* output, int inverse){
+  memset(output, 0, CHUNK_LENGTH);
   /**
   * Table de permutation initial
   * d'un bloc, issu de DES
@@ -106,7 +119,7 @@ void permutation(int* input, int* output, int inverse){
   */
   for(n = 0; n < KEY_SIZE_BYTES*8; n++){
     int nth = inverse ? permutation_table[n] : n;
-    int x = ((*input) & ( 1 << nth )) >> nth; // get the n-th bit of key
+    char x = ((*input) & ( 1 << nth )) >> nth; // get the n-th bit of key
 
     int output_pos = inverse ? n : permutation_table[n];
     // set the n-th bit of permuted key with permuted bit

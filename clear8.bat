@@ -1,1 +1,1 @@
-.\a.exe -i ".\data\lena.bmp" -k ".\data\key.txt"
+.\a.exe -i ".\data\panda.bmp" -k ".\data\key.txt"

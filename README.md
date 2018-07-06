@@ -14,3 +14,5 @@ l’image.
 ## Ressources
 * http://www.mysti2d.net/polynesie2/ETT/C044/31/Steganographie/Formatbmp.html
 * https://msdn.microsoft.com/fr-fr/02f8ed65-8fed-4dda-9b94-7343a0cfa8c1
+
+## Presentation

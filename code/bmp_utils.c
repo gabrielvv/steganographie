@@ -7,12 +7,17 @@
 * https://stackoverflow.com/questions/14279242/read-bitmap-file-into-structure
 *
 * Actions disponibles
-* - effacement message si message = NULL et decode_flag  = 0
 * - ecriture du message si message != NULL et decode_flag = 0
 * - lecture du message si decode_flag = 1
 *
+* @param {char*} filename - nom du fichier bitmap cible
+* @param {BITMAPINFOHEADER*} bitmapInfoHeader
+* @param {MSG*} msg
+* @param {int} decode_flag
+*
+*
 */
-unsigned char* manipBitmapFile(char *filename, BITMAPINFOHEADER *bitmapInfoHeader, char* message, int decode_flag)
+MSG* manipBitmapFile(char *filename, BITMAPINFOHEADER *bitmapInfoHeader, MSG* msg, int decode_flag)
 {
 
     FILE *filePtr; //our file pointer
@@ -50,35 +55,40 @@ unsigned char* manipBitmapFile(char *filename, BITMAPINFOHEADER *bitmapInfoHeade
     : bitmapInfoHeader->biWidth * bitmapInfoHeader->biHeight;
 
     if(bitmapInfoHeader->biBitCount == 8) {
-      message = process8(filePtr, &bitmapFileHeader, message, imgSize, decode_flag);
+      msg = process8(filePtr, &bitmapFileHeader, msg, imgSize, decode_flag);
     } else if(bitmapInfoHeader->biBitCount == 24) {
-      message = process24(filePtr, &bitmapFileHeader, message, imgSize, decode_flag);
+      msg = process24(filePtr, &bitmapFileHeader, msg, imgSize, decode_flag);
     }
 
     //close file and return bitmap iamge data
     fclose(filePtr);
-    return message;
+    // printf("manipBitmapFile output message=%s len=%d\n", msg->message, msg->len);
+    return msg;
 }
 
-unsigned char* process8(
+/**
+* @desc Traite les fichiers bmp 8 bits (avec palette de couleurs)
+*
+* @param {FILE*} filePtr - fichier bitmap cible
+* @param {BITMAPFILEHEADER*} bitmapFileHeader
+* @param {MSG*} msg
+* @param {int} imgSize
+* @param {int} decode_flag
+*
+*/
+MSG* process8(
   FILE* filePtr,
   BITMAPFILEHEADER* bitmapFileHeader,
-  char* message,
+  MSG* msg,
   int imgSize,
   int decode_flag){
 
   int colorNbr = 256;
   int paletteIdx=0;  //image index counter
+  char* message = msg->message;
+  int msgLen = msg->len;
 
-  // Si on ne fournit pas de message cela correspond à un effacement du message
-  if(!message && !decode_flag){
-    printf("creating empty message\n");
-    message = (char*)malloc(colorNbr+1);
-    for(paletteIdx = 0; paletteIdx < colorNbr; paletteIdx++){
-      message[paletteIdx] = 1;
-    }
-    message[paletteIdx] = '\0';
-  }
+  // printf("process8 input message=%s len=%d\n", message, msgLen);
 
   RGBQUAD* bitmapPalette;  //store image color palette
 
@@ -111,8 +121,7 @@ unsigned char* process8(
   if(!decode_flag) {
 
     // On ajoute un byte pour stocker la longueur du message
-    int msgLen = strlen(message) + 1;
-    printf("encoding message of length=%d\n", msgLen);
+    msgLen = msgLen + 1;
     if(colorNbr < msgLen){
       printf("Pas assez de place disponible, le message sera tronqué\n");
       msgLen = colorNbr;
@@ -129,9 +138,7 @@ unsigned char* process8(
     fwrite(bitmapPalette, colorNbr*sizeof(RGBQUAD), 1, filePtr);
     // printf("after write\n");
   } else {
-
-    int msgLen = bitmapPalette[0].rgbReserved;
-
+    msgLen = bitmapPalette[0].rgbReserved;
     message = (char*) malloc(msgLen+1);
     for (paletteIdx = 1; paletteIdx < msgLen+1; paletteIdx++)
     {
@@ -142,37 +149,48 @@ unsigned char* process8(
   }
 
   free(bitmapPalette);
-  return message;
+  msg->message = message;
+  msg->len = decode_flag ? msgLen : msgLen-1;
+  // printf("process8 output message=%s len=%d\n", msg->message, msg->len);
+  return msg;
 }
 
-unsigned char* process24(
+/**
+* @desc Traite les fichiers bmp 24 bits
+*
+* @param {FILE*} filePtr - fichier bitmap cible
+* @param {BITMAPFILEHEADER*} bitmapFileHeader
+* @param {MSG*} msg
+* @param {int} imgSize
+* @param {int} decode_flag
+*
+*/
+MSG* process24(
   FILE* filePtr,
   BITMAPFILEHEADER* bitmapFileHeader,
-  char* message,
+  MSG* msg,
   int imgSize,
   int decode_flag){
 
   printf("process24\n");
 
-  unsigned char* bitmap;
+  char* bitmap;
+  char* message = msg->message;
+  int len = msg->len;
 
   // Place disponible en octets pour encoder le message
   int availableBytes = (imgSize*3)/8;
 
   if(!decode_flag){
-    printf("encoding\n");
-
     // +1 byte pour coder la longeur du message
-    int len = strlen(message) + 1;
+    len = msg->len + 1;
     if(availableBytes < len){
       len = availableBytes;
       printf("Pas assez de place disponible, le message sera tronqué\n");
     }
 
-    printf("len=%d\n", len);
-
     int bitmapLen = len*8;
-    bitmap = (unsigned char*)malloc(bitmapLen);
+    bitmap = (char*)malloc(bitmapLen);
     fread(bitmap, bitmapLen, 1, filePtr);
 
     //verify memory allocation
@@ -194,8 +212,7 @@ unsigned char* process24(
 
     /*** On code la longueur du message dans les 8 premiers octets ***/
 
-    unsigned char c = len-1;
-    printf("c=%d\n", c);
+    char c = len-1;
     int i, nth, x;
     for(nth = 0; nth < 8; nth++){
       x = (c & ( 1 << nth )) >> nth; // get the n-th bit of input
@@ -216,29 +233,26 @@ unsigned char* process24(
 
   }else{
 
-    printf("decoding\n");
-
     /******* On décode la longueur du message ********/
 
-    bitmap = (unsigned char*)malloc(8);
+    bitmap = (char*)malloc(8);
     fread(bitmap, 8, 1, filePtr);
 
-    int len = 0;
+    len = 0;
     int x, nth, i;
     for(nth = 0; nth < 8; nth++) {
       x = (bitmap[nth] & ( 1 << 0 )) >> 0; // get the n-th bit of input
       len ^= (-x ^ len) & (1UL << nth);
     }
-    printf("longueur de message decodee=%d\n", len);
     free(bitmap);
 
     /***********************************************/
 
-    message = (unsigned char*) malloc(len+1);
+    message = (char*) malloc(len+1);
     message[len] = '\0';
 
     int bmpLen = len*8;
-    bitmap = (unsigned char*)malloc(bmpLen);
+    bitmap = (char*)malloc(bmpLen);
     fread(bitmap, bmpLen, 1, filePtr);
 
     //verify memory allocation
@@ -259,7 +273,7 @@ unsigned char* process24(
     }
 
     for(i = 0; i < len; i++) {
-      unsigned char c = '\0';
+      char c = '\0';
       for(nth = 0; nth < 8; nth++) {
         x = (bitmap[nth+i*8] & ( 1 << 0 )) >> 0; // get the n-th bit of input
         c ^= (-x ^ c) & (1UL << nth);
@@ -270,5 +284,7 @@ unsigned char* process24(
 
   free(bitmap);
   fclose(filePtr);
-  return message;
+  msg->message = message;
+  msg->len = len;
+  return msg;
 }

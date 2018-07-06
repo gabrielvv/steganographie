@@ -7,21 +7,16 @@
 
 extern int CHUNK_LENGTH;
 extern int KEY_SIZE_BYTES;
-
 static int decode_flag;
-
-void handle_file(char*, char*, int*);
-
-// https://stackoverflow.com/questions/840501/how-do-function-pointers-in-c-work
-void (*encode_decode)(int*, int*, int*, int*);
 
 int main(int argc,char* argv[]) {
 
   int c;
   char *file_name = NULL;
-  unsigned char *message = NULL;
+  char *message = NULL;
+  MSG* msg = (MSG*)malloc(sizeof(MSG));
   char *key_file_name = NULL;
-  int* key;
+  char* key;
 
   while (1)
   {
@@ -82,38 +77,81 @@ int main(int argc,char* argv[]) {
       }
   }
 
-  if(file_name && key_file_name)
+  if(file_name)
   {
-    key = set_key(key_file_name);
-    BITMAPINFOHEADER bitmapInfoHeader;
+    if(!decode_flag){
+      int len = strlen(message);
 
-    message = manipBitmapFile(file_name, &bitmapInfoHeader, message, decode_flag);
+      /**
+      * Si une clé est fournie
+      * on encode le message selon le CBC
+      * le chiffrement est réalisé avec une permutation de clé et un XOR
+      */
+      if(key_file_name){
 
-    if(!decode_flag) printf("message insere=%s\n", message);
-    if(decode_flag) printf("message recupere=%s\n", message);
+        char xor_vector[CHUNK_LENGTH];
+        char chunk[CHUNK_LENGTH+1];
+        char encoded_chunk[CHUNK_LENGTH+1];
+
+        key = set_key(key_file_name);
+        memcpy(xor_vector, key, CHUNK_LENGTH);
+        char* permuted_key = (char*)malloc(KEY_SIZE_BYTES);
+        permutation(key, permuted_key, 0);
+
+        int i;
+        for(i = 0; i < len/CHUNK_LENGTH; i++){
+          memcpy(chunk, message+CHUNK_LENGTH*i, CHUNK_LENGTH);
+          msg_enc(chunk, xor_vector, permuted_key, encoded_chunk);
+          memcpy(message+CHUNK_LENGTH*i, encoded_chunk, CHUNK_LENGTH);
+        }
+      }
+
+      BITMAPINFOHEADER bitmapInfoHeader;
+      msg->len = len;
+      msg->message = message;
+      msg = manipBitmapFile(file_name, &bitmapInfoHeader, msg, decode_flag);
+      printf("message insere=%s\n", msg->message);
+    }
+
+    if(decode_flag){
+      BITMAPINFOHEADER bitmapInfoHeader;
+      msg->len = -1; // est redéfini par manipBitmapFile
+      msg->message = message;
+      msg = manipBitmapFile(file_name, &bitmapInfoHeader, msg, decode_flag);
+      message = msg->message;
+      int len = msg->len;
+
+      /**
+      * Si une clé est fournie
+      * on décode le message selon le CBC
+      * le chiffrement est réalisé avec une permutation de clé et un XOR
+      */
+      if(key_file_name){
+        char xor_vector[CHUNK_LENGTH];
+        char chunk[CHUNK_LENGTH];
+        char decoded_chunk[CHUNK_LENGTH];
+
+        key = set_key(key_file_name);
+        memcpy(xor_vector, key, CHUNK_LENGTH);
+
+        char* permuted_key = (char*)malloc(KEY_SIZE_BYTES);
+        permutation(key, permuted_key, 0);
+
+        int i;
+        for(i = 0; i < len/CHUNK_LENGTH; i++){
+          memcpy(chunk, message+CHUNK_LENGTH*i, CHUNK_LENGTH);
+          msg_dec(chunk, xor_vector, permuted_key, decoded_chunk);
+          memcpy(message+CHUNK_LENGTH*i, decoded_chunk, CHUNK_LENGTH);
+        }
+      }
+      printf("message recupere=%s\n", message);
+    }
 
   }
 
   free(file_name);
   free(key);
   free(key_file_name);
-  free(message);
+  free(msg);
   exit (0);
 } //main
-
-/**
-* @param {char*} file_name    - nom de l'image à encoder
-* @param {char*} key          - clé de chiffrement symétrique
-* @param {void (*encode_decode)(char*, char*, char*, char*)} - fonction de chiffrement/déchiffrement à appliquer
-*
-*/
-void handle_file(
-  char *file_name,
-  char *message,
-  int* key) {
-
-  int xor_vector[CHUNK_LENGTH];
-  memcpy(xor_vector, key, CHUNK_LENGTH);
-  int input[CHUNK_LENGTH];
-  int output[CHUNK_LENGTH];
-}
